@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>優惠券領取中心</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+  color:#fff;
+  background:
+    linear-gradient(180deg,rgba(238,77,45,.88),rgba(255,117,24,.95)),
+    radial-gradient(circle at top,#fff3e8 0%,transparent 35%);
+  min-height:100vh;
+}
+
+.container{
+  max-width:520px;
+  margin:auto;
+  padding:50px 20px;
+}
+
+.card{
+  background:#fff;
+  color:#333;
+  border-radius:22px;
+  padding:32px 26px;
+  box-shadow:0 20px 45px rgba(0,0,0,.22);
+}
+
+.logo{
+  text-align:center;
+  font-size:32px;
+  font-weight:900;
+  color:#ee4d2d;
+  margin-bottom:8px;
+}
+
+h2{
+  text-align:center;
+  margin:8px 0;
+  color:#ee4d2d;
+}
+
+.sub{
+  text-align:center;
+  color:#777;
+  font-size:14px;
+  margin-bottom:26px;
+}
+
+.coupon{
+  background:linear-gradient(135deg,#fff4ef,#ffe2d6);
+  border:2px dashed #ee4d2d;
+  border-radius:18px;
+  padding:22px;
+  margin-bottom:20px;
+  position:relative;
+}
+
+.coupon-title{
+  color:#ee4d2d;
+  font-size:20px;
+  font-weight:800;
+}
+
+.discount{
+  font-size:42px;
+  font-weight:900;
+  color:#ee4d2d;
+  margin:10px 0;
+}
+
+.info{
+  font-size:14px;
+  color:#555;
+  line-height:1.8;
+}
+
+.coupon-btn{
+  width:100%;
+  padding:15px;
+  margin-top:15px;
+  border:0;
+  border-radius:12px;
+  background:#ee4d2d;
+  color:white;
+  font-size:16px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.coupon-btn:hover{
+  background:#ff663d;
+}
+
+.note{
+  margin-top:18px;
+  text-align:center;
+  color:#888;
+  font-size:12px;
+  line-height:1.7;
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.65);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  z-index:999;
+}
+
+.modal-box{
+  background:white;
+  color:#333;
+  max-width:360px;
+  width:100%;
+  border-radius:20px;
+  padding:28px;
+  text-align:center;
+}
+
+.modal-box h3{
+  color:#ee4d2d;
+  margin-top:0;
+}
+
+.modal-coupon-name{
+  font-size:18px;
+  font-weight:800;
+  color:#ee4d2d;
+  background:#fff2ed;
+  padding:12px;
+  border-radius:10px;
+  margin:15px 0;
+}
+
+.modal-btn{
+  width:100%;
+  padding:16px;
+  border:0;
+  border-radius:12px;
+  background:#ee4d2d;
+  color:white;
+  font-size:16px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.modal-btn:hover{
+  background:#ff663d;
+}
+
+.close-btn{
+  margin-top:12px;
+  background:#eee;
+  color:#666;
+}
+
+.close-btn:hover{
+  background:#ddd;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="card">
+
+    <div class="logo">Shopee</div>
+
+    <h2>蝦皮購物優惠券領取中心</h2>
+
+    <p class="sub">
+      限時優惠開放領取中
+    </p>
+
+    <!-- 優惠券自動生成 -->
+    <div id="couponList"></div>
+
+    <div class="note">
+      ※ 優惠券數量有限，實際活動內容及使用條件請以活動頁說明為準。
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- 彈窗 -->
+<div class="modal" id="modal">
+
+  <div class="modal-box">
+
+    <h3>優惠券領取</h3>
+
+    <div
+      class="modal-coupon-name"
+      id="selectedCoupon">
+    </div>
+
+    <p>
+      請前往聯絡優惠券人員完成領取流程。
+    </p>
+
+    <button
+      class="modal-btn"
+      onclick="goLine()">
+      前往聯絡優惠券人員
+    </button>
+
+    <button
+      class="modal-btn close-btn"
+      onclick="closeModal()">
+      返回
+    </button>
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   1. 唯一跳轉鏈接
+
+   以後要換鏈接，只改這一個地方即可。
+   所有優惠券都會跳到這裡。
+===================================================== */
+
+const lineUrl =
+"https://line-router-admin.vercel.app/api/r/xiapitw";
+
+
+/* =====================================================
+   2. 優惠券管理區
+
+   以後新增優惠券，只需要在這裡新增資料。
+   不需要設定跳轉鏈接。
+===================================================== */
+
+const coupons = [
+
+  {
+    title: "全站購物優惠券",
+    discount: "1折",
+    minSpend: "$299",
+    expire: "9.1 23:59"
+  }
+];
+
+
+/* =====================================================
+   3. 自動生成優惠券
+===================================================== */
+
+function renderCoupons(){
+
+  const couponList =
+    document.getElementById("couponList");
+
+  couponList.innerHTML = "";
+
+  coupons.forEach((coupon,index)=>{
+
+    const div =
+      document.createElement("div");
+
+    div.className = "coupon";
+
+    div.innerHTML = `
+
+      <div class="coupon-title">
+        ${coupon.title}
+      </div>
+
+      <div class="discount">
+        ${coupon.discount}
+      </div>
+
+      <div class="info">
+        使用條件：低消 ${coupon.minSpend}<br>
+        有效期限：即日起至 ${coupon.expire}
+      </div>
+
+      <button
+        class="coupon-btn"
+        onclick="showModal(${index})">
+        立即查看優惠券
+      </button>
+
+    `;
+
+    couponList.appendChild(div);
+
+  });
+
+}
+
+
+/* =====================================================
+   4. 打開彈窗
+===================================================== */
+
+function showModal(index){
+
+  const coupon = coupons[index];
+
+  document.getElementById(
+    "selectedCoupon"
+  ).innerText = coupon.title;
+
+  document.getElementById(
+    "modal"
+  ).style.display = "flex";
+
+}
+
+
+/* =====================================================
+   5. 關閉彈窗
+===================================================== */
+
+function closeModal(){
+
+  document.getElementById(
+    "modal"
+  ).style.display = "none";
+
+}
+
+
+/* =====================================================
+   6. 所有優惠券共用同一個跳轉鏈接
+===================================================== */
+
+function goLine(){
+
+  window.location.href = lineUrl;
+
+}
+
+
+/* =====================================================
+   7. 點黑色背景關閉彈窗
+===================================================== */
+
+document
+.getElementById("modal")
+.addEventListener("click",function(e){
+
+  if(e.target === this){
+    closeModal();
+  }
+
+});
+
+
+/* 啟動頁面 */
+
+renderCoupons();
+
+</script>
+
+</body>
+</html>
